@@ -2,120 +2,151 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sketch Studio - Master Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sketch Studio - Universal</title>
     <style>
-        :root { --accent: #00bcd4; --bg: #181818; --panel: #222; --border: #333; --text: #eee; --text-muted: #888; }
-        body { 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            background-color: var(--bg); color: var(--text);
-            margin: 0; padding: 0; height: 100vh; display: flex; overflow: hidden;
-            user-select: none;
-        }
-
-        /* --- 布局结构 --- */
-        .app-container { display: flex; width: 100%; height: 100%; }
+        :root { --accent: #00bcd4; --bg: #121212; --panel: #1e1e1e; --border: #333; --text: #eee; --text-muted: #888; }
         
-        /* 1. 左侧画布视窗 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: var(--bg); color: var(--text);
+            margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden;
+            user-select: none; -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- 布局容器 (Flexbox) --- */
+        .app-container { display: flex; width: 100%; height: 100%; transition: all 0.3s ease; }
+
+        /* --- 1. 画布区域 (Viewport) --- */
         .viewport { 
-            flex: 1; position: relative; overflow: hidden; 
-            background-image: radial-gradient(#2a2a2a 1px, transparent 1px);
-            background-size: 20px 20px;
-            background-color: #111;
-            cursor: grab;
+            position: relative; overflow: hidden; 
+            background-image: radial-gradient(#333 1px, transparent 1px);
+            background-size: 20px 20px; background-color: #000;
             display: flex; justify-content: center; align-items: center;
+            touch-action: none; /* 关键：防止画布拖动时触发页面滚动 */
         }
-        .viewport:active { cursor: grabbing; }
-
-        /* 画布容器 (用于变换) */
+        
         .canvas-transform-layer {
-            transform-origin: center;
-            transition: transform 0.1s ease-out;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            transform-origin: center; transition: transform 0.1s ease-out;
+            box-shadow: 0 0 50px rgba(0,0,0,0.6);
         }
-        canvas { display: block; max-width: none; } /* 解除 max-width 限制以便缩放 */
+        canvas { display: block; max-width: none; }
 
-        /* 视窗工具栏 */
+        /* 视窗工具栏 (浮动) */
         .viewport-tools {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            background: rgba(30,30,30,0.85); backdrop-filter: blur(8px);
             padding: 8px 16px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
-            display: flex; gap: 15px; font-size: 0.9rem; color: #fff; z-index: 100;
+            display: flex; gap: 15px; font-size: 0.85rem; color: #fff; z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        .tool-item { cursor: pointer; opacity: 0.7; transition: 0.2s; }
-        .tool-item:hover { opacity: 1; color: var(--accent); }
+        .tool-item { cursor: pointer; opacity: 0.8; font-weight: 600; }
+        .tool-item:active { opacity: 1; color: var(--accent); }
 
-        /* 2. 右侧属性面板 */
+        /* --- 2. 控制面板 (Sidebar) --- */
         .sidebar { 
-            width: 340px; background: var(--panel); border-left: 1px solid var(--border); 
+            background: var(--panel); 
             display: flex; flex-direction: column; z-index: 20;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.3);
         }
 
         .sidebar-header {
-            padding: 20px; border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: center; align-items: center;
         }
-        .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; color: #fff; }
+        .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: 1.5px; color: #fff; }
         .logo span { color: var(--accent); }
 
         /* 滚动区域 */
-        .controls-scroll { flex: 1; overflow-y: auto; padding: 20px; }
-        .controls-scroll::-webkit-scrollbar { width: 5px; }
-        .controls-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-
-        /* 预设按钮网格 */
+        .controls-scroll { flex: 1; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
+        
+        /* 预设按钮 */
         .preset-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 25px; }
         .preset-btn {
-            background: #333; border: 1px solid transparent; color: #ccc;
-            padding: 10px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; text-align: center;
-            transition: all 0.2s;
+            background: #2a2a2a; color: #ccc; padding: 12px; border-radius: 8px; 
+            cursor: pointer; font-size: 0.85rem; text-align: center; border: 1px solid transparent;
+            display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
         }
-        .preset-btn:hover { background: #444; }
+        .preset-btn:hover { background: #333; }
         .preset-btn.active { background: rgba(0, 188, 212, 0.15); border-color: var(--accent); color: var(--accent); font-weight: bold; }
 
-        /* 滑块组 */
+        /* 滑块样式 */
         h3 { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin: 20px 0 10px 0; letter-spacing: 1px; }
         .control-group { margin-bottom: 15px; }
-        .label-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem; font-weight: 500; }
+        .label-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem; font-weight: 500; }
         .val-display { color: var(--accent); font-family: monospace; }
 
         input[type="range"] { 
-            -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; 
+            -webkit-appearance: none; width: 100%; height: 24px; /* 加大触控区 */
+            background: transparent; outline: none; margin: 0;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; background: #333; border-radius: 2px;
         }
         input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 14px; height: 14px; background: #ddd; border-radius: 50%; cursor: pointer; transition: 0.2s;
+            -webkit-appearance: none; width: 20px; height: 20px; background: #ddd; 
+            border-radius: 50%; cursor: pointer; margin-top: -8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: transform 0.1s;
         }
-        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); background: var(--accent); }
+        input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); background: var(--accent); }
 
-        /* 颜色选择器 */
-        .color-row { display: flex; gap: 10px; margin-bottom: 20px; }
-        .color-item { flex: 1; background: #333; padding: 8px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; }
-        input[type="color"] { width: 24px; height: 24px; border: none; padding: 0; background: none; cursor: pointer; }
-
-        /* 底部按钮 */
-        .sidebar-footer { padding: 20px; border-top: 1px solid var(--border); background: #1a1a1a; display: flex; gap: 10px; flex-direction: column; }
+        /* 底部操作区 */
+        .sidebar-footer { padding: 15px; border-top: 1px solid var(--border); background: #181818; display: flex; gap: 10px; flex-direction: column; }
         .btn { 
-            width: 100%; padding: 12px; border: none; border-radius: 6px; 
-            font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.9rem;
+            width: 100%; padding: 14px; border: none; border-radius: 8px; 
+            font-weight: 600; cursor: pointer; font-size: 0.95rem;
             display: flex; justify-content: center; align-items: center; gap: 8px;
         }
         .btn-primary { background: var(--accent); color: #000; }
-        .btn-primary:hover { background: #00acc1; }
-        .btn-primary:disabled { background: #333; color: #666; cursor: not-allowed; }
-        .btn-outline { background: transparent; border: 1px solid #444; color: #ccc; }
-        .btn-outline:hover { border-color: #666; background: #333; }
+        .btn-outline { background: #2a2a2a; color: #ddd; border: 1px solid #333; }
 
-        /* 状态提示 */
-        #emptyState { position: absolute; color: #555; text-align: center; pointer-events: none; }
+        /* 加载动画 */
         .loader-overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.6); 
+            position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
             display: flex; justify-content: center; align-items: center; z-index: 50;
-            opacity: 0; pointer-events: none; transition: 0.2s; backdrop-filter: blur(2px);
+            opacity: 0; pointer-events: none; transition: 0.3s;
         }
         .loader-overlay.active { opacity: 1; pointer-events: all; }
-        .spinner { width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        #emptyState { position: absolute; color: #666; text-align: center; pointer-events: none; }
+
+        /* =========================================
+           🚀 响应式核心逻辑 (The Magic) 
+           ========================================= */
+        
+        /* 💻 桌面端样式 (默认) */
+        @media (min-width: 769px) {
+            .app-container { flex-direction: row; } /* 左右布局 */
+            .viewport { flex: 1; height: 100%; }
+            .sidebar { width: 340px; height: 100%; border-left: 1px solid var(--border); }
+        }
+
+        /* 📱 移动端样式 (手机) */
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; } /* 上下布局 */
+            
+            .viewport { 
+                width: 100%; 
+                height: 45vh; /* 画布占 45% */
+                border-bottom: 1px solid var(--border);
+            }
+            
+            .sidebar { 
+                width: 100%; 
+                height: 55vh; /* 控制台占 55% */
+                box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
+            }
+            
+            /* 手机优化调整 */
+            .sidebar-header { display: none; } /* 手机隐藏Logo省空间 */
+            .preset-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
+            .preset-btn { font-size: 0.75rem; padding: 8px; flex-direction: column; gap: 4px; }
+            .sidebar-footer { padding: 10px; flex-direction: row; } /* 手机按钮横排 */
+            h3 { margin-top: 10px; }
+            .controls-scroll { padding: 15px; }
+        }
     </style>
 </head>
 <body>
@@ -123,8 +154,8 @@
 <div class="app-container">
     <div class="viewport" id="viewport">
         <div id="emptyState">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <p>拖拽图片到这里 或 点击右侧上传</p>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.5; margin-bottom:10px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p>点击下方按钮打开图片</p>
         </div>
         
         <div class="canvas-transform-layer" id="transformLayer">
@@ -140,9 +171,7 @@
             <div class="tool-item" id="zoomVal">100%</div>
             <div class="tool-item" id="zoomInBtn">＋</div>
             <div style="width:1px; height:14px; background:rgba(255,255,255,0.2); margin:0 5px;"></div>
-            <div class="tool-item" id="fitBtn">适配屏幕</div>
-            <div style="width:1px; height:14px; background:rgba(255,255,255,0.2); margin:0 5px;"></div>
-            <div class="tool-item" id="compareBtn" title="按住对比原图">👁 对比</div>
+            <div class="tool-item" id="compareBtn">👁 按住对比</div>
         </div>
     </div>
 
@@ -152,15 +181,13 @@
         </div>
 
         <div class="controls-scroll">
-            <h3>Presets (预设风格)</h3>
             <div class="preset-grid">
-                <div class="preset-btn active" onclick="applyPreset('classic')">✏️ 经典铅笔</div>
-                <div class="preset-btn" onclick="applyPreset('charcoal')">🌑 复古炭笔</div>
-                <div class="preset-btn" onclick="applyPreset('color')">🎨 彩色素描</div>
-                <div class="preset-btn" onclick="applyPreset('blueprint')">📐 工程蓝图</div>
+                <div class="preset-btn active" onclick="applyPreset('classic')"><span>✏️</span> 经典铅笔</div>
+                <div class="preset-btn" onclick="applyPreset('charcoal')"><span>🌑</span> 复古炭笔</div>
+                <div class="preset-btn" onclick="applyPreset('color')"><span>🎨</span> 彩色素描</div>
+                <div class="preset-btn" onclick="applyPreset('blueprint')"><span>📐</span> 工程蓝图</div>
             </div>
 
-            <h3>Line & Detail (线条与细节)</h3>
             <div class="control-group">
                 <div class="label-row"><label>线条粗细 (Blur)</label><span class="val-display" id="valRadius">8</span></div>
                 <input type="range" id="inRadius" min="1" max="50" value="8">
@@ -169,8 +196,6 @@
                 <div class="label-row"><label>锐化程度 (Sharpen)</label><span class="val-display" id="valSharpen">50</span></div>
                 <input type="range" id="inSharpen" min="0" max="100" value="50">
             </div>
-
-            <h3>Tone & Light (光影色调)</h3>
             <div class="control-group">
                 <div class="label-row"><label>笔触浓度 (Darkness)</label><span class="val-display" id="valDarkness">30</span></div>
                 <input type="range" id="inDarkness" min="0" max="100" value="30">
@@ -183,26 +208,13 @@
                 <div class="label-row"><label>暗角 (Vignette)</label><span class="val-display" id="valVignette">0</span></div>
                 <input type="range" id="inVignette" min="0" max="100" value="0">
             </div>
-
-            <h3>Material (色彩与材质)</h3>
             <div class="control-group">
-                <div class="label-row"><label>原色混合 (Mix)</label><span class="val-display" id="valMix">0%</span></div>
+                <div class="label-row"><label>色彩混合 (Mix)</label><span class="val-display" id="valMix">0%</span></div>
                 <input type="range" id="inMix" min="0" max="100" value="0">
             </div>
-            <div class="control-group">
+             <div class="control-group">
                 <div class="label-row"><label>纸张噪点 (Noise)</label><span class="val-display" id="valNoise">20</span></div>
                 <input type="range" id="inNoise" min="0" max="80" value="20">
-            </div>
-            
-            <div class="color-row">
-                <div class="color-item">
-                    <span>纸张色</span>
-                    <input type="color" id="inPaperColor" value="#ffffff">
-                </div>
-                <div class="color-item">
-                    <span>线条色</span>
-                    <input type="color" id="inStrokeColor" value="#000000">
-                </div>
             </div>
         </div>
 
@@ -211,7 +223,7 @@
                 📂 打开图片
             </button>
             <button class="btn btn-primary" id="downloadBtn" disabled>
-                💾 导出高清大图 (PNG)
+                💾 保存图片
             </button>
             <input type="file" id="fileInput" accept="image/*" style="display:none">
         </div>
@@ -219,25 +231,29 @@
 </div>
 
 <script>
-    // --- 核心变量 ---
+    // --- 1. 初始化变量 ---
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const transformLayer = document.getElementById('transformLayer');
     const loader = document.getElementById('loader');
     
-    // 状态管理
-    let originalData = null; // 原始像素数据
+    // 状态
+    let originalData = null; 
     let imgWidth = 0, imgHeight = 0;
     let isProcessing = false;
     let updateTimer = null;
     
-    // 缩放/拖拽状态
+    // 变换状态 (Zoom/Pan)
     let scale = 1;
     let panX = 0, panY = 0;
+    
+    // 触控手势状态
+    let lastX = 0, lastY = 0;
     let isDragging = false;
-    let startX, startY;
+    let initialPinchDist = null;
+    let initialScale = 1;
 
-    // 参数 Inputs 映射
+    // 参数绑定
     const inputs = {
         radius: document.getElementById('inRadius'),
         sharpen: document.getElementById('inSharpen'),
@@ -245,148 +261,134 @@
         contrast: document.getElementById('inContrast'),
         vignette: document.getElementById('inVignette'),
         mix: document.getElementById('inMix'),
-        noise: document.getElementById('inNoise'),
-        paperColor: document.getElementById('inPaperColor'),
-        strokeColor: document.getElementById('inStrokeColor')
+        noise: document.getElementById('inNoise')
     };
 
-    // --- 预设系统 (Presets) ---
+    // 预设数据
     const presets = {
-        classic: { radius: 8, sharpen: 50, darkness: 30, contrast: 10, vignette: 20, mix: 0, noise: 20, paper: '#ffffff', stroke: '#000000' },
-        charcoal: { radius: 25, sharpen: 30, darkness: 60, contrast: 30, vignette: 60, mix: 0, noise: 50, paper: '#f0f0e0', stroke: '#2b2b2b' },
-        color: { radius: 6, sharpen: 60, darkness: 20, contrast: 10, vignette: 0, mix: 60, noise: 30, paper: '#ffffff', stroke: '#000000' },
-        blueprint: { radius: 4, sharpen: 80, darkness: 80, contrast: 0, vignette: 40, mix: 0, noise: 10, paper: '#003366', stroke: '#ffffff' }
+        classic: { radius: 8, sharpen: 50, darkness: 30, contrast: 10, vignette: 20, mix: 0, noise: 20 },
+        charcoal: { radius: 25, sharpen: 30, darkness: 60, contrast: 30, vignette: 60, mix: 0, noise: 50 },
+        color: { radius: 6, sharpen: 60, darkness: 20, contrast: 10, vignette: 0, mix: 60, noise: 30 },
+        blueprint: { radius: 4, sharpen: 80, darkness: 80, contrast: 0, vignette: 40, mix: 0, noise: 10 }
     };
 
-    function applyPreset(name) {
-        // UI Highlight
+    // --- 2. 交互逻辑 (Events) ---
+
+    // 预设切换
+    window.applyPreset = (name) => {
         document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
-
-        // Apply Values
+        event.currentTarget.classList.add('active');
         const p = presets[name];
-        inputs.radius.value = p.radius;
-        inputs.sharpen.value = p.sharpen;
-        inputs.darkness.value = p.darkness;
-        inputs.contrast.value = p.contrast;
-        inputs.vignette.value = p.vignette;
-        inputs.mix.value = p.mix;
-        inputs.noise.value = p.noise;
-        inputs.paperColor.value = p.paper;
-        inputs.strokeColor.value = p.stroke;
-
-        // Update Displays
+        Object.keys(p).forEach(k => { if(inputs[k]) inputs[k].value = p[k]; });
         updateDisplays();
         requestUpdate();
-    }
+    };
 
-    // --- 交互事件监听 ---
-    
-    // 1. 拖拽上传
-    const viewport = document.getElementById('viewport');
-    viewport.addEventListener('dragover', (e) => { e.preventDefault(); viewport.style.borderColor = 'var(--accent)'; });
-    viewport.addEventListener('dragleave', (e) => { e.preventDefault(); viewport.style.borderColor = 'transparent'; });
-    viewport.addEventListener('drop', (e) => {
-        e.preventDefault(); viewport.style.borderColor = 'transparent';
-        if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
-    });
-
-    // 2. 文件上传
+    // 文件上传
     document.getElementById('fileInput').addEventListener('change', (e) => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+    
+    // 支持拖拽上传 (桌面)
+    const vp = document.getElementById('viewport');
+    vp.addEventListener('dragover', e => e.preventDefault());
+    vp.addEventListener('drop', e => { e.preventDefault(); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
 
-    // 3. 滑块变更
+    // 滑块实时更新
     Object.keys(inputs).forEach(key => {
-        inputs[key].addEventListener('input', () => {
-            updateDisplays();
-            requestUpdate();
-        });
+        inputs[key].addEventListener('input', () => { updateDisplays(); requestUpdate(); });
     });
 
-    // 4. 下载
+    // 下载
     document.getElementById('downloadBtn').addEventListener('click', () => {
         const link = document.createElement('a');
-        link.download = 'sketch_studio_export.png';
+        link.download = 'sketch_universal.png';
         link.href = canvas.toDataURL('image/png', 1.0);
         link.click();
     });
 
-    // 5. 对比功能
+    // 对比功能 (支持鼠标和触摸)
     const compareBtn = document.getElementById('compareBtn');
-    const startCompare = () => { if(originalData) ctx.putImageData(new ImageData(originalData, imgWidth, imgHeight), 0, 0); };
-    const endCompare = () => { requestUpdate(); };
-    compareBtn.addEventListener('mousedown', startCompare);
-    compareBtn.addEventListener('mouseup', endCompare);
-    compareBtn.addEventListener('mouseleave', endCompare);
+    const startCompare = (e) => { e.preventDefault(); if(originalData) ctx.putImageData(new ImageData(originalData, imgWidth, imgHeight), 0, 0); };
+    const endCompare = (e) => { e.preventDefault(); requestUpdate(); };
+    ['mousedown', 'touchstart'].forEach(evt => compareBtn.addEventListener(evt, startCompare));
+    ['mouseup', 'mouseleave', 'touchend'].forEach(evt => compareBtn.addEventListener(evt, endCompare));
 
-    // 6. 视窗缩放与拖拽 (Pan & Zoom)
-    viewport.addEventListener('wheel', (e) => {
+    // --- 3. 手势引擎 (Gesture Engine) ---
+    // 统一处理鼠标和触摸，实现缩放和拖拽
+    
+    vp.addEventListener('wheel', (e) => {
         if(!originalData) return;
         e.preventDefault();
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        scale *= delta;
-        scale = Math.min(Math.max(0.1, scale), 5); // 限制缩放 10% - 500%
-        updateTransform();
-    });
+        updateZoom(scale * delta);
+    }, {passive: false});
 
-    viewport.addEventListener('mousedown', (e) => {
+    // 鼠标拖拽
+    vp.addEventListener('mousedown', e => {
         if(!originalData) return;
-        isDragging = true; startX = e.clientX - panX; startY = e.clientY - panY;
+        isDragging = true; lastX = e.clientX; lastY = e.clientY;
     });
-    window.addEventListener('mousemove', (e) => {
+    window.addEventListener('mousemove', e => {
         if(!isDragging) return;
         e.preventDefault();
-        panX = e.clientX - startX;
-        panY = e.clientY - startY;
+        panX += e.clientX - lastX; panY += e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY;
         updateTransform();
     });
     window.addEventListener('mouseup', () => isDragging = false);
 
-    // Zoom Buttons
-    document.getElementById('zoomInBtn').onclick = () => { scale *= 1.2; updateTransform(); };
-    document.getElementById('zoomOutBtn').onclick = () => { scale /= 1.2; updateTransform(); };
-    document.getElementById('fitBtn').onclick = fitImage;
+    // 触摸手势 (单指拖拽，双指缩放)
+    vp.addEventListener('touchstart', e => {
+        if(!originalData) return;
+        if(e.touches.length === 1) {
+            isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+        } else if (e.touches.length === 2) {
+            isDragging = false;
+            initialPinchDist = getDist(e.touches);
+            initialScale = scale;
+        }
+    }, {passive: false});
 
+    vp.addEventListener('touchmove', e => {
+        if(!originalData) return;
+        e.preventDefault();
+        if(e.touches.length === 1 && isDragging) {
+            panX += e.touches[0].clientX - lastX; panY += e.touches[0].clientY - lastY;
+            lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+            updateTransform();
+        } else if (e.touches.length === 2 && initialPinchDist) {
+            const dist = getDist(e.touches);
+            updateZoom(initialScale * (dist / initialPinchDist));
+        }
+    }, {passive: false});
+
+    vp.addEventListener('touchend', () => { isDragging = false; initialPinchDist = null; });
+
+    document.getElementById('zoomInBtn').onclick = () => updateZoom(scale * 1.2);
+    document.getElementById('zoomOutBtn').onclick = () => updateZoom(scale / 1.2);
+
+    function getDist(touches) { return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY); }
+    function updateZoom(s) { scale = Math.min(Math.max(0.1, s), 5); updateTransform(); }
     function updateTransform() {
         transformLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
         document.getElementById('zoomVal').innerText = Math.round(scale * 100) + '%';
     }
 
-    function fitImage() {
-        if(!imgWidth) return;
-        // 计算适配比例
-        const pad = 40;
-        const vW = viewport.clientWidth - pad;
-        const vH = viewport.clientHeight - pad;
-        const ratio = Math.min(vW / imgWidth, vH / imgHeight);
-        scale = ratio; panX = 0; panY = 0;
-        updateTransform();
-    }
-
-    function updateDisplays() {
-        Object.keys(inputs).forEach(key => {
-            const el = document.getElementById('val' + key.charAt(0).toUpperCase() + key.slice(1));
-            if(el) el.innerText = key === 'mix' ? inputs[key].value + '%' : inputs[key].value;
-        });
-    }
-
-    // --- 图像处理核心 ---
+    // --- 4. 图像处理核心 (Image Processing Core) ---
 
     function loadFile(file) {
         loader.classList.add('active');
         const img = new Image();
         const reader = new FileReader();
-        reader.onload = (e) => img.src = e.target.result;
+        reader.onload = e => img.src = e.target.result;
         reader.readAsDataURL(file);
 
         img.onload = () => {
-            // 最大尺寸限制 (避免 Canvas 崩溃，但保持高清)
-            const maxDim = 3000; 
+            const maxDim = 2400; // 兼顾手机性能与画质
             let w = img.width, h = img.height;
             if (w > maxDim || h > maxDim) {
-                const r = Math.min(maxDim / w, maxDim / h);
-                w = Math.round(w * r); h = Math.round(h * r);
+                const r = Math.min(maxDim/w, maxDim/h);
+                w = Math.round(w*r); h = Math.round(h*r);
             }
-
             imgWidth = w; imgHeight = h;
             canvas.width = w; canvas.height = h;
             ctx.drawImage(img, 0, 0, w, h);
@@ -396,172 +398,136 @@
             document.getElementById('viewportTools').style.display = 'flex';
             document.getElementById('downloadBtn').disabled = false;
             
-            fitImage();
+            // 自动适配屏幕
+            const pad = 40;
+            const vW = document.getElementById('viewport').clientWidth - pad;
+            const vH = document.getElementById('viewport').clientHeight - pad;
+            scale = Math.min(vW/w, vH/h); panX=0; panY=0;
+            updateTransform();
+            
             requestUpdate();
         };
+    }
+
+    function updateDisplays() {
+        Object.keys(inputs).forEach(k => {
+            const el = document.getElementById('val'+k.charAt(0).toUpperCase()+k.slice(1));
+            if(el) el.innerText = k==='mix'? inputs[k].value+'%' : inputs[k].value;
+        });
     }
 
     function requestUpdate() {
         if(!originalData) return;
         if(updateTimer) clearTimeout(updateTimer);
-        if(!isProcessing) loader.classList.add('active');
-        
-        // 防抖
+        loader.classList.add('active');
         updateTimer = setTimeout(() => {
             isProcessing = true;
-            // 使用 requestAnimationFrame 避免 UI 阻塞
-            requestAnimationFrame(processImage); 
-        }, 50);
+            requestAnimationFrame(processImage);
+        }, 30);
     }
 
     function processImage() {
-        // 1. 获取所有参数
         const radius = parseInt(inputs.radius.value);
-        const sharpenAmount = parseInt(inputs.sharpen.value) / 100; // 0.0 - 1.0
+        const sharpen = parseInt(inputs.sharpen.value) / 100;
         const darkness = parseInt(inputs.darkness.value);
-        const contrastVal = parseInt(inputs.contrast.value);
-        const vignetteStr = parseInt(inputs.vignette.value);
-        const mixVal = parseInt(inputs.mix.value) / 100;
-        const noiseAmount = parseInt(inputs.noise.value);
-        const paper = hexToRgb(inputs.paperColor.value);
-        const stroke = hexToRgb(inputs.strokeColor.value);
+        const contrast = parseInt(inputs.contrast.value);
+        const vignette = parseInt(inputs.vignette.value);
+        const mix = parseInt(inputs.mix.value) / 100;
+        const noise = parseInt(inputs.noise.value);
 
         const len = imgWidth * imgHeight;
-        
-        // 2. 灰度与反相 (Gray & Invert)
         const grayBuf = new Uint8Array(len);
         const invertBuf = new Uint8Array(len);
+        
         for(let i=0; i<len; i++) {
-            // 心理学灰度
-            const val = (originalData[i*4]*77 + originalData[i*4+1]*150 + originalData[i*4+2]*29) >> 8;
-            grayBuf[i] = val;
-            invertBuf[i] = 255 - val;
+            const v = (originalData[i*4]*77 + originalData[i*4+1]*150 + originalData[i*4+2]*29) >> 8;
+            grayBuf[i] = v; invertBuf[i] = 255 - v;
         }
 
-        // 3. 高斯模糊 (Box Blur x3 Approximation)
         let blurBuf = new Float32Array(invertBuf);
-        for(let i=0; i<3; i++) {
-            fastBlurH(blurBuf, imgWidth, imgHeight, radius);
-            fastBlurV(blurBuf, imgWidth, imgHeight, radius);
-        }
+        for(let i=0; i<3; i++) { fastBlurH(blurBuf, imgWidth, imgHeight, radius); fastBlurV(blurBuf, imgWidth, imgHeight, radius); }
 
-        // 4. 预计算 LUTs (Gamma & Contrast)
         const gamma = 1 - (darkness / 120);
-        const contrastFactor = (259 * (contrastVal + 255)) / (255 * (259 - contrastVal));
+        const cFactor = (259 * (contrast + 255)) / (255 * (259 - contrast));
         const lut = new Uint8Array(256);
         for(let i=0; i<256; i++) {
-            // Gamma
-            let val = Math.pow(i / 255, gamma) * 255;
-            // Contrast
-            val = contrastFactor * (val - 128) + 128;
-            lut[i] = Math.max(0, Math.min(255, val));
+            let v = Math.pow(i/255, gamma) * 255;
+            v = cFactor * (v - 128) + 128;
+            lut[i] = Math.max(0, Math.min(255, v));
         }
 
-        // 5. 像素合成 (主循环)
-        const finalImgData = ctx.createImageData(imgWidth, imgHeight);
-        const data = finalImgData.data;
-
-        // 计算中心点用于暗角
-        const cx = imgWidth / 2;
-        const cy = imgHeight / 2;
-        const maxDist = Math.sqrt(cx*cx + cy*cy);
+        const finalData = ctx.createImageData(imgWidth, imgHeight);
+        const d = finalData.data;
+        const cx = imgWidth/2, cy = imgHeight/2;
+        const maxDist = Math.hypot(cx, cy);
 
         for(let i=0; i<len; i++) {
-            // A. 颜色减淡混合
-            const base = grayBuf[i];
-            const blend = blurBuf[i];
-            let val = (blend >= 255) ? 255 : (base << 8) / (255 - blend);
-            if(val > 255) val = 255;
+            const base = grayBuf[i], blend = blurBuf[i];
+            let v = (blend >= 255) ? 255 : (base << 8) / (255 - blend);
+            if(v > 255) v = 255;
 
-            // B. 锐化 (Sharpening) - 简化版 Unsharp Mask
-            // 原理: 原始值 + (原始值 - 模糊值) * 系数
-            // 我们这里用 'val' 作为原始亮度，用 'blurBuf' 近似模糊后的亮度(反相回来)
-            // 注意：因为blurBuf是反相的，所以 (255 - blurBuf) 才是正向模糊
-            if (sharpenAmount > 0) {
-                const blurredVal = 255 - blend; 
-                // 差异 = 当前高频细节 - 低频模糊
-                const detail = val - blurredVal;
-                val = val + detail * sharpenAmount;
-                if(val < 0) val = 0; if(val > 255) val = 255;
+            if (sharpen > 0) {
+                const detail = v - (255 - blend);
+                v = v + detail * sharpen;
+                if(v<0) v=0; if(v>255) v=255;
             }
 
-            // C. 查表 (Contrast & Gamma)
-            val = lut[Math.floor(val)];
+            v = lut[Math.floor(v)];
 
-            // D. 暗角 (Vignette)
-            if (vignetteStr > 0) {
-                const x = i % imgWidth;
-                const y = Math.floor(i / imgWidth);
-                const dist = Math.sqrt((x-cx)*(x-cx) + (y-cy)*(y-cy));
-                // 距离越远，亮度衰减
-                const factor = 1 - (dist / maxDist) * (vignetteStr / 100);
-                val = val * Math.max(0, factor);
+            if (vignette > 0) {
+                const x = i % imgWidth, y = (i / imgWidth)|0;
+                const dist = Math.hypot(x-cx, y-cy);
+                v = v * Math.max(0, 1 - (dist/maxDist) * (vignette/100));
             }
 
-            // E. 噪点 (Noise)
-            if(noiseAmount > 0) {
-                val += (Math.random() - 0.5) * noiseAmount;
-                if(val < 0) val = 0; if(val > 255) val = 255;
+            if(noise > 0) {
+                v += (Math.random()-0.5) * noise;
+                if(v<0) v=0; if(v>255) v=255;
             }
 
-            // F. 颜色映射 (Color Mapping)
-            // 插值: Black -> StrokeColor, White -> PaperColor
-            const ratio = val / 255; // 0..1
-            const rS = stroke.r + (paper.r - stroke.r) * ratio;
-            const gS = stroke.g + (paper.g - stroke.g) * ratio;
-            const bS = stroke.b + (paper.b - stroke.b) * ratio;
-
-            // G. 最终混合 (Mix with Original)
             const idx = i * 4;
-            if (mixVal > 0) {
-                data[idx]   = rS * (1 - mixVal) + originalData[idx] * mixVal;
-                data[idx+1] = gS * (1 - mixVal) + originalData[idx+1] * mixVal;
-                data[idx+2] = bS * (1 - mixVal) + originalData[idx+2] * mixVal;
+            if (mix > 0) {
+                d[idx] = v*(1-mix) + originalData[idx]*mix;
+                d[idx+1] = v*(1-mix) + originalData[idx+1]*mix;
+                d[idx+2] = v*(1-mix) + originalData[idx+2]*mix;
             } else {
-                data[idx] = rS; data[idx+1] = gS; data[idx+2] = bS;
+                d[idx] = v; d[idx+1] = v; d[idx+2] = v;
             }
-            data[idx+3] = 255;
+            d[idx+3] = 255;
         }
-
-        ctx.putImageData(finalImgData, 0, 0);
+        ctx.putImageData(finalData, 0, 0);
         loader.classList.remove('active');
         isProcessing = false;
     }
 
-    // --- 辅助函数 ---
-    function hexToRgb(hex) {
-        const bigint = parseInt(hex.slice(1), 16);
-        return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
-    }
-
-    // 优化的 Box Blur 算法 (与之前版本一致，保证 O(1) 性能)
-    function fastBlurH(target, w, h, radius) {
-        if(radius < 1) return;
+    // 优化的 O(1) 模糊算法
+    function fastBlurH(t, w, h, r) {
+        if(r<1) return;
         for(let y=0; y<h; y++) {
-            let rowStart = y*w; let sum = 0;
-            for(let i=0; i<=radius; i++) sum += target[rowStart + i];
-            sum += target[rowStart]*radius;
+            let rs = y*w, sum=0;
+            for(let i=0; i<=r; i++) sum+=t[rs+i];
+            sum+=t[rs]*r;
             for(let x=0; x<w; x++) {
-                target[rowStart+x] = sum / (2*radius+1);
-                let l = x-radius; let r = x+radius+1;
-                let out = (l<0) ? target[rowStart] : target[rowStart+l];
-                let inn = (r>=w) ? target[rowStart+w-1] : target[rowStart+r];
-                sum = sum - out + inn;
+                t[rs+x] = sum/(2*r+1);
+                let l=x-r, rg=x+r+1;
+                let out=(l<0)?t[rs]:t[rs+l];
+                let inn=(rg>=w)?t[rs+w-1]:t[rs+rg];
+                sum=sum-out+inn;
             }
         }
     }
-    function fastBlurV(target, w, h, radius) {
-        if(radius < 1) return;
+    function fastBlurV(t, w, h, r) {
+        if(r<1) return;
         for(let x=0; x<w; x++) {
-            let sum = 0;
-            for(let i=0; i<=radius; i++) sum += target[i*w+x];
-            sum += target[x]*radius;
+            let sum=0;
+            for(let i=0; i<=r; i++) sum+=t[i*w+x];
+            sum+=t[x]*r;
             for(let y=0; y<h; y++) {
-                target[y*w+x] = sum / (2*radius+1);
-                let t = y-radius; let b = y+radius+1;
-                let out = (t<0) ? target[x] : target[t*w+x];
-                let inn = (b>=h) ? target[(h-1)*w+x] : target[b*w+x];
-                sum = sum - out + inn;
+                t[y*w+x] = sum/(2*r+1);
+                let top=y-r, b=y+r+1;
+                let out=(top<0)?t[x]:t[top*w+x];
+                let inn=(b>=h)?t[(h-1)*w+x]:t[b*w+x];
+                sum=sum-out+inn;
             }
         }
     }
